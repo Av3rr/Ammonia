@@ -23,9 +23,13 @@ ENV PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH"
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
-    apt-get install -y --no-install-recommends curl ca-certificates nmap ffuf && \
+    apt-get install -y --no-install-recommends curl ca-certificates nmap ffuf hydra git && \
+    git clone --depth 1 https://github.com/danielmiessler/SecLists.git /usr/share/seclists && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN git clone https://gitlab.com/exploit-database/exploitdb.git /opt/exploitdb && \
+    ln -sf /opt/exploitdb/searchsploit /usr/local/bin/searchsploit
 
 RUN groupadd --gid 10001 appgroup && \
     useradd --no-create-home --shell /bin/false --uid 10000 --gid 10001 --system appuser
