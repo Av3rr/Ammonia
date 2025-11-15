@@ -14,6 +14,7 @@ services:
       - ../logging_config.yaml:/app/logging_config.yaml:ro
       - ./logs:/app/logs
       - ./reports:/app/reports
+      - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8010/health"]
       interval: 30s
@@ -22,6 +23,8 @@ services:
       start_period: 40s
     networks:
       - sgr-network
+    depends_on:
+      - metasploit
 
   sgr-frontend:
     build:
@@ -40,6 +43,23 @@ services:
     networks:
       - sgr-network
 
+  metasploit:
+    image: metasploitframework/metasploit-framework:latest
+    container_name: sgr-pentest-metasploit
+    restart: unless-stopped
+    command: >
+      bash -c "msfdb init && msfrpcd -f -a 0.0.0.0 -p ${MSF_PORT:-55553} -U ${MSF_USER:-msf} -P ${MSF_PASSWORD}"
+    ports:
+      # Debug
+      - "127.0.0.1:55553:55553"
+    volumes:
+      - msf_data:/home/msf/.msf4
+    networks:
+      - sgr-network
+
 networks:
   sgr-network:
     driver: bridge
+
+volumes:
+  msf_data:
