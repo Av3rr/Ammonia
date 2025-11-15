@@ -27,3 +27,11 @@ mcp:
 
 # Agent definitions will be loaded from agents.yaml
 agents: {}
+
+# Metasploit RPC Configuration
+metasploit:
+  host: "metasploit"
+  port: 55553
+  user: "msf"
+  password: "your_msf_password"
+  ssl: false
