@@ -37,6 +37,8 @@ services:
     depends_on:
       sgr-backend:
         condition: service_healthy
+    volumes:
+      - ./reports:/usr/share/nginx/html/reports:ro
     networks:
       - sgr-network
 

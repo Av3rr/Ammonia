@@ -1,0 +1,239 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+import asyncio
+import json
+import logging
+import xml.etree.ElementTree as ET
+from typing import TYPE_CHECKING, Literal, Dict, Any, Optional
+
+from pydantic import Field
+from sgr_deep_research.core.base_tool import BaseTool
+
+if TYPE_CHECKING:
+    from sgr_deep_research.core.models import ResearchContext
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+
+
+class ReconnaissanceToolNmap(BaseTool):
+    """
+    Nmap wrapper for the SGR agent.
+
+    This tool is intended to be called by the LLM-driven agent to perform network
+    reconnaissance with nmap. It runs nmap as a subprocess (XML output to stdout),
+    parses the XML and returns a JSON-encoded string containing the parsed results
+    or an error description.
+
+    Notes for the LLM:
+    - Use this tool when you need an up-to-date view of open ports, services,
+      versions, and basic host information for a given target.
+    - Choose scan_type according to the required thoroughness vs noise:
+        * 'fast'  — quick scan of common ports (low noise, fast).
+        * 'full'  — all ports + version detection (thorough, noisier, slower).
+        * 'stealth'— SYN scan variant (quieter in some environments, still intrusive).
+    - Ensure authorization and scope are provided in the ResearchContext before calling.
+    """
+
+    # LLM-facing arguments (descriptions are read by LLM and influence behavior)
+    reasoning: str = Field(
+        description=(
+            "Nmap is a network scanning tool used to discover hosts, services, open ports, operating systems and network topology. Its purpose is to map a target network’s live hosts and exposed services so testers can identify attack surface, misconfigurations, and potential entry points. In a penetration test, Nmap is a primary reconnaissance tool used during the discovery/enumeration phase to build an inventory of targets and guide further vulnerability testing."
+        )
+    )
+    target: str = Field(
+        description=(
+            "IP-адрес или доменное имя цели для сканирования (например, '192.0.2.1' или 'example.com'). "
+            "Если нужно сканировать подсеть — указывайте её в CIDR-формате."
+        )
+    )
+    scan_type: Literal["fast", "full", "stealth"] = Field(
+        default="fast",
+        description=(
+            "Выбор шаблона сканирования nmap: "
+            "'fast' — быстрое сканирование наиболее распространённых портов; "
+            "'full' — сканирование всех портов с определением версий; "
+            "'stealth' — SYN (тихий) скан, уменьшает видимость, но может быть более шумным в некоторых сетях."
+        ),
+    )
+
+    async def __call__(self, context: ResearchContext) -> str:
+        """
+        Запускает nmap (async), парсит XML-вывод и возвращает JSON-строку.
+
+        Возвращаемая структура (JSON):
+        {
+          "scan_info": { ... },
+          "hosts": [
+            {
+              "addresses": [...],
+              "hostnames": [...],
+              "status": {...},
+              "ports": [
+                {
+                  "portid": "80",
+                  "protocol": "tcp",
+                  "state": {...},
+                  "service": {...},
+                  "scripts": [...]
+                }, ...
+              ],
+              "os": [...],
+              "uptime": {...},
+              "host_scripts": [...]
+            }, ...
+          ]
+        }
+
+        В случае ошибки возвращается JSON с полем "error".
+        """
+        logger.info(f"Запуск ReconnaissanceToolNmap для цели: {self.target} (тип: {self.scan_type})")
+        print(f"[ReconnaissanceToolNmap] Starting nmap scan target={self.target} scan_type={self.scan_type}")
+
+        # Map scan types to nmap CLI args
+        scan_args_map = {
+            "fast": ["-F"],                # fast scan (fewer ports)
+            "full": ["-p-", "-sV"],        # all ports + version detection
+            "stealth": ["-sS", "-Pn"],     # SYN scan + skip host discovery (quieter)
+        }
+
+        # Default timeout for nmap run (seconds)
+        timeout_seconds = 300
+
+        args = scan_args_map.get(self.scan_type, ["-F"])
+        command = ["nmap", *args, self.target, "-oX", "-"]  # '-oX -' -> XML to stdout
+
+        logger.debug(f"Constructed nmap command: {' '.join(command)}")
+        print(f"[ReconnaissanceToolNmap] Command: {' '.join(command)}")
+
+        try:
+            # Ensure nmap is available — FileNotFoundError will be raised if not
+            process = await asyncio.create_subprocess_exec(
+                *command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+
+            logger.debug("Nmap subprocess started, awaiting completion...")
+            try:
+                stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout_seconds)
+            except asyncio.TimeoutError:
+                process.kill()
+                await process.wait()
+                msg = f"nmap timed out after {timeout_seconds} seconds"
+                logger.error(msg)
+                print(f"[ReconnaissanceToolNmap] ERROR: {msg}")
+                return json.dumps({"error": msg}, ensure_ascii=False)
+
+            rc = process.returncode
+            logger.debug(f"nmap finished with return code: {rc}")
+            if rc != 0:
+                stderr_text = stderr.decode("utf-8", errors="ignore").strip()
+                logger.error(f"nmap failed: {stderr_text}")
+                print(f"[ReconnaissanceToolNmap] nmap stderr: {stderr_text}")
+                return json.dumps({"error": "nmap failed", "stderr": stderr_text}, ensure_ascii=False)
+
+            xml_text = stdout.decode("utf-8", errors="ignore")
+            logger.debug("Received XML output from nmap (length=%d)", len(xml_text))
+            print("[ReconnaissanceToolNmap] Parsing XML output from nmap...")
+
+            parsed = self._parse_nmap_xml(xml_text)
+
+            logger.info("nmap parse finished, returning JSON")
+            print("[ReconnaissanceToolNmap] Parse complete, returning JSON result")
+
+            return json.dumps(parsed, ensure_ascii=False, indent=2)
+
+        except FileNotFoundError:
+            msg = "nmap not found in PATH. Установите nmap и убедитесь, что он доступен."
+            logger.exception(msg)
+            print(f"[ReconnaissanceToolNmap] EXCEPTION: {msg}")
+            return json.dumps({"error": msg}, ensure_ascii=False)
+        except Exception as e:
+            logger.exception("Unexpected error while running nmap")
+            print(f"[ReconnaissanceToolNmap] EXCEPTION: {e}")
+            return json.dumps({"error": f"unexpected error: {str(e)}"}, ensure_ascii=False)
+
+    def _parse_nmap_xml(self, xml_text: str) -> Dict[str, Any]:
+        """
+        Parse nmap XML text and return a structured dictionary.
+
+        This routine is intentionally conservative: it extracts stable attributes
+        (addresses, hostnames, ports, states, services, scripts, os matches, uptime).
+        """
+        root = ET.fromstring(xml_text)
+        result: Dict[str, Any] = {"scan_info": {}, "hosts": []}
+
+        # optional top-level scaninfo
+        scaninfo = root.find("scaninfo")
+        if scaninfo is not None:
+            result["scan_info"] = scaninfo.attrib
+
+        for host in root.findall("host"):
+            host_info: Dict[str, Any] = {
+                "addresses": [],
+                "hostnames": [],
+                "status": {},
+                "ports": [],
+                "os": [],
+            }
+
+            # addresses
+            for addr in host.findall("address"):
+                host_info["addresses"].append(addr.attrib.copy())
+
+            # hostnames
+            hostnames = host.find("hostnames")
+            if hostnames is not None:
+                for hn in hostnames.findall("hostname"):
+                    host_info["hostnames"].append(hn.attrib.copy())
+
+            # status
+            status = host.find("status")
+            if status is not None:
+                host_info["status"] = status.attrib.copy()
+
+            # ports and per-port scripts
+            ports = host.find("ports")
+            if ports is not None:
+                for p in ports.findall("port"):
+                    port_entry: Dict[str, Any] = {}
+                    port_entry.update(p.attrib)  # portid, protocol
+                    state = p.find("state")
+                    if state is not None:
+                        port_entry["state"] = state.attrib.copy()
+                    service = p.find("service")
+                    if service is not None:
+                        port_entry["service"] = service.attrib.copy()
+                    # script outputs for this port
+                    scripts = []
+                    for script in p.findall("script"):
+                        scripts.append({"id": script.attrib.get("id"), "output": script.attrib.get("output")})
+                    if scripts:
+                        port_entry["scripts"] = scripts
+                    host_info["ports"].append(port_entry)
+
+            # os matches
+            os_el = host.find("os")
+            if os_el is not None:
+                for osmatch in os_el.findall("osmatch"):
+                    host_info["os"].append(osmatch.attrib.copy())
+
+            # uptime
+            uptime = host.find("uptime")
+            if uptime is not None:
+                host_info["uptime"] = uptime.attrib.copy()
+
+            # hostscript results (top-level per-host scripts)
+            host_scripts = []
+            hs_parent = host.find("hostscript")
+            if hs_parent is not None:
+                for hs in hs_parent.findall("script"):
+                    host_scripts.append({"id": hs.attrib.get("id"), "output": hs.attrib.get("output")})
+                if host_scripts:
+                    host_info["host_scripts"] = host_scripts
+
+            result["hosts"].append(host_info)
+
+        logger.debug("Parsed hosts count: %d", len(result["hosts"]))
+        return result
