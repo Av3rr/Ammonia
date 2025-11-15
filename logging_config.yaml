@@ -40,10 +40,10 @@ loggers:
     handlers: [ console, console_error, file ]
 
 
-  sgr_deep_research:
+  sgr_pentest:
     level: INFO
 
-  sgr_deep_research.agents:
+  sgr_pentest.agents:
     level: INFO
 
   httpx:

@@ -1,6 +1,6 @@
 agents:
   pentest_agent:
-    base_class: "SGRToolCallingAgent"
+    base_class: "SGRAgent"
 
     prompts:
       system_prompt_str: |
@@ -22,8 +22,7 @@ agents:
       - "AdaptPlanTool"
       - "CreateReportTool"
       - "FinalAnswerTool"
-      - "ReasoningTool"
-      - "NmapScanTool"
+      - "NmapTool"
       - "FfufTool"
       - "VulnerabilityScanTool"
       - "CredentialAttackTool"

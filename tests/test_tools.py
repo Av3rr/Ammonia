@@ -7,7 +7,7 @@ This module contains simple tests for all tools:
 
 from unittest.mock import Mock, patch
 
-from sgr_deep_research.core.tools import (
+from sgr_pentest.core.tools import (
     AdaptPlanTool,
     ClarificationTool,
     CreateReportTool,
@@ -58,7 +58,7 @@ class TestToolsInitialization:
 
     def test_final_answer_tool_initialization(self):
         """Test FinalAnswerTool initialization."""
-        from sgr_deep_research.core.models import AgentStatesEnum
+        from sgr_pentest.core.models import AgentStatesEnum
 
         tool = FinalAnswerTool(
             reasoning="Test",
@@ -85,8 +85,8 @@ class TestToolsInitialization:
     def test_web_search_tool_initialization(self):
         """Test WebSearchTool initialization."""
         with (
-            patch("sgr_deep_research.core.tools.web_search_tool.GlobalConfig") as mock_config_class,
-            patch("sgr_deep_research.core.tools.web_search_tool.TavilySearchService"),
+            patch("sgr_pentest.core.tools.web_search_tool.GlobalConfig") as mock_config_class,
+            patch("sgr_pentest.core.tools.web_search_tool.TavilySearchService"),
         ):
             mock_config = Mock()
             mock_config.search.max_results = 5
@@ -101,7 +101,7 @@ class TestToolsInitialization:
 
     def test_extract_page_content_tool_initialization(self):
         """Test ExtractPageContentTool initialization."""
-        with patch("sgr_deep_research.core.tools.extract_page_content_tool.TavilySearchService"):
+        with patch("sgr_pentest.core.tools.extract_page_content_tool.TavilySearchService"):
             tool = ExtractPageContentTool(
                 reasoning="Test",
                 urls=["https://example.com"],
@@ -128,8 +128,8 @@ class TestToolsConfigReading:
     def test_web_search_tool_reads_config(self):
         """Test WebSearchTool reads search config for max_results."""
         with (
-            patch("sgr_deep_research.core.tools.web_search_tool.GlobalConfig") as mock_config_class,
-            patch("sgr_deep_research.core.tools.web_search_tool.TavilySearchService"),
+            patch("sgr_pentest.core.tools.web_search_tool.GlobalConfig") as mock_config_class,
+            patch("sgr_pentest.core.tools.web_search_tool.TavilySearchService"),
         ):
             mock_config = Mock()
             mock_config.search.max_results = 5
@@ -147,8 +147,8 @@ class TestToolsConfigReading:
     def test_extract_page_content_tool_reads_config(self):
         """Test ExtractPageContentTool reads search config."""
         with (
-            patch("sgr_deep_research.core.tools.extract_page_content_tool.GlobalConfig") as mock_config_class,
-            patch("sgr_deep_research.core.tools.extract_page_content_tool.TavilySearchService"),
+            patch("sgr_pentest.core.tools.extract_page_content_tool.GlobalConfig") as mock_config_class,
+            patch("sgr_pentest.core.tools.extract_page_content_tool.TavilySearchService"),
         ):
             mock_config = Mock()
             mock_config.search.tavily_api_key = "test_key"
@@ -164,7 +164,7 @@ class TestToolsConfigReading:
 
     def test_create_report_tool_reads_config(self):
         """Test CreateReportTool reads execution config."""
-        with patch("sgr_deep_research.core.tools.create_report_tool.GlobalConfig") as mock_config_class:
+        with patch("sgr_pentest.core.tools.create_report_tool.GlobalConfig") as mock_config_class:
             mock_config = Mock()
             mock_config.execution.reports_dir = "reports"
             mock_config_class.return_value = mock_config

@@ -6,8 +6,8 @@ from unittest.mock import Mock
 import pytest
 from openai import AsyncOpenAI
 
-from sgr_deep_research.core.agent_definition import ExecutionConfig, LLMConfig, PromptsConfig
-from sgr_deep_research.core.base_agent import BaseAgent
+from sgr_pentest.core.agent_definition import ExecutionConfig, LLMConfig, PromptsConfig
+from sgr_pentest.core.base_agent import BaseAgent
 
 
 def create_test_agent(

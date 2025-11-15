@@ -10,7 +10,7 @@ from datetime import datetime
 import pytest
 from pydantic import ValidationError
 
-from sgr_deep_research.core.models import (
+from sgr_pentest.core.models import (
     AgentStatesEnum,
     ResearchContext,
     SearchResult,

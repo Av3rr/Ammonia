@@ -61,7 +61,7 @@ Repository = "https://github.com/vakovalskii/sgr-deep-research"
 Issues = "https://github.com/vakovalskii/sgr-deep-research/issues"
 
 [project.scripts]
-sgr = "sgr_deep_research.__main__:main"
+sgr = "sgr_pentest.__main__:main"
 
 [project.optional-dependencies]
 dev = [
@@ -81,19 +81,19 @@ tests = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["sgr_deep_research*"]
+include = ["sgr_pentest*"]
 
 [tool.setuptools]
 zip-safe = false
 
 [tool.setuptools.dynamic]
-version = {attr = "sgr_deep_research.__version__"}
+version = {attr = "sgr_pentest.__version__"}
 
 [tool.setuptools.package-dir]
 "" = "."
 
 [tool.setuptools.package-data]
-"sgr_deep_research" = ["**/*.yaml", "**/*.yml", "**/*.json", "**/*.txt"]
+"sgr_pentest" = ["**/*.yaml", "**/*.yml", "**/*.json", "**/*.txt"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

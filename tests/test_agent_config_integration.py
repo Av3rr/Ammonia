@@ -7,8 +7,8 @@ setup.
 
 import pytest
 
-from sgr_deep_research.core.agent_config import GlobalConfig
-from sgr_deep_research.core.agents import SGRAgent, SGRToolCallingAgent
+from sgr_pentest.core.agent_config import GlobalConfig
+from sgr_pentest.core.agents import SGRAgent, SGRToolCallingAgent
 from tests.conftest import create_test_agent
 
 
@@ -56,7 +56,7 @@ class TestAgentConfigurationEdgeCases:
 
     def test_invalid_config_values(self):
         """Test handling of invalid configuration values."""
-        from sgr_deep_research.core.agent_definition import LLMConfig
+        from sgr_pentest.core.agent_definition import LLMConfig
 
         # Should still create agent (validation happens in OpenAI client)
         agent = create_test_agent(

@@ -11,9 +11,9 @@ from unittest.mock import Mock
 
 import pytest
 
-from sgr_deep_research.core.base_agent import BaseAgent
-from sgr_deep_research.core.models import AgentStatesEnum, ResearchContext
-from sgr_deep_research.core.tools import BaseTool, ReasoningTool
+from sgr_pentest.core.base_agent import BaseAgent
+from sgr_pentest.core.models import AgentStatesEnum, ResearchContext
+from sgr_pentest.core.tools import BaseTool, ReasoningTool
 from tests.conftest import create_test_agent
 
 
@@ -22,7 +22,7 @@ class TestBaseAgentInitialization:
 
     def test_initialization_basic(self):
         """Test basic initialization with required parameters."""
-        from sgr_deep_research.core.agent_definition import ExecutionConfig
+        from sgr_pentest.core.agent_definition import ExecutionConfig
 
         agent = create_test_agent(
             BaseAgent,
@@ -38,7 +38,7 @@ class TestBaseAgentInitialization:
     def test_initialization_with_custom_limits(self):
         """Test initialization with custom iteration and clarification
         limits."""
-        from sgr_deep_research.core.agent_definition import ExecutionConfig
+        from sgr_pentest.core.agent_definition import ExecutionConfig
 
         agent = create_test_agent(
             BaseAgent,
@@ -110,7 +110,7 @@ class TestBaseAgentInitialization:
         agent = create_test_agent(BaseAgent, task="Test")
 
         assert agent.logger is not None
-        assert "sgr_deep_research.agents" in agent.logger.name
+        assert "sgr_pentest.agents" in agent.logger.name
         assert agent.id in agent.logger.name
 
 
