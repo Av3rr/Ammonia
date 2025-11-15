@@ -23,7 +23,7 @@ ENV PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH"
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
-    apt-get install -y --no-install-recommends curl ca-certificates && \
+    apt-get install -y --no-install-recommends curl ca-certificates nmap ffuf && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 

@@ -40,6 +40,9 @@ When answering questions about specific dates, numbers, versions, or names:
 7. TEMPORAL VALIDATION: When extracting page content, check if the page shows data for correct time period
 </PRECISION_GUIDELINES>
 
-<AGENT_TOOL_USAGE_GUIDELINES>:
+<TOOL_SELECTION_RULES>
+CRITICAL RULE: When selecting a tool for the 'function' field, you MUST use one of the EXACT tool names provided below. Do not invent, combine, or modify tool names. Your choice is strictly limited to this list.
+
+Your available tools are:
 {available_tools}
-</AGENT_TOOL_USAGE_GUIDELINES>
+</TOOL_SELECTION_RULES>

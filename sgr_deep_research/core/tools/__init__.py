@@ -14,6 +14,8 @@ from sgr_deep_research.core.tools.final_answer_tool import FinalAnswerTool
 from sgr_deep_research.core.tools.generate_plan_tool import GeneratePlanTool
 from sgr_deep_research.core.tools.reasoning_tool import ReasoningTool
 from sgr_deep_research.core.tools.web_search_tool import WebSearchTool
+from sgr_deep_research.core.tools.nmap_scan_tool import NmapScanTool
+from sgr_deep_research.core.tools.ffuf_tool import FfufTool
 
 # Tool lists for backward compatibility
 system_agent_tools = [
@@ -45,6 +47,8 @@ __all__ = [
     "CreateReportTool",
     "FinalAnswerTool",
     "ReasoningTool",
+    "NmapScanTool",
+    "FfufTool",
     # Tool lists
     "NextStepToolStub",
     "NextStepToolsBuilder",

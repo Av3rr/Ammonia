@@ -13,6 +13,7 @@ class PromptLoader:
         available_tools_str_list = [
             f"{i}. {tool.tool_name}: {tool.description}" for i, tool in enumerate(available_tools, start=1)
         ]
+#         raise KeyError(available_tools_str_list)
         try:
             return template.format(
                 available_tools="\n".join(available_tools_str_list),

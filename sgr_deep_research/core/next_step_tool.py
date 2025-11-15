@@ -8,6 +8,8 @@ from typing import Annotated, Literal, Type, TypeVar
 
 from pydantic import BaseModel, Field, create_model
 
+from sgr_deep_research.core.tools.tool_normalizer import ToolNormalizerMixin
+
 from sgr_deep_research.core.base_tool import BaseTool
 from sgr_deep_research.core.tools.reasoning_tool import ReasoningTool
 
@@ -43,10 +45,10 @@ class NextStepToolsBuilder:
         field."""
 
         return create_model(  # noqa
-            f"D_{tool_class.__name__}",
-            __base__=(tool_class, DiscriminantToolMixin),  # the order matters here
-            tool_name_discriminator=(Literal[tool_class.tool_name], Field(..., description="Tool name discriminator")),
-        )
+                    f"D_{tool_class.__name__}",
+                    __base__=(tool_class, DiscriminantToolMixin, ToolNormalizerMixin),
+                    tool_name_discriminator=(Literal[tool_class.tool_name], Field(..., description="Tool name discriminator")),
+                )
 
     @classmethod
     def _create_tool_types_union(cls, tools_list: list[Type[T]]) -> Type:
