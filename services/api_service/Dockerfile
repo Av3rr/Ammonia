@@ -34,6 +34,9 @@ RUN git clone https://gitlab.com/exploit-database/exploitdb.git /opt/exploitdb &
 RUN groupadd --gid 10001 appgroup && \
     useradd --no-create-home --shell /bin/false --uid 10000 --gid 10001 --system appuser
 
+WORKDIR /app/data
+RUN curl -k -L -o vullist.xlsx https://bdu.fstec.ru/files/documents/vullist.xlsx
+
 COPY --from=builder --chown=appuser:appgroup /opt/venv /opt/venv
 
 WORKDIR /app
