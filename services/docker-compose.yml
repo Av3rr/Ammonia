@@ -49,9 +49,6 @@ services:
     restart: unless-stopped
     command: >
       bash -c "msfdb init && msfrpcd -f -a 0.0.0.0 -p ${MSF_PORT:-55553} -U ${MSF_USER:-msf} -P ${MSF_PASSWORD}"
-    ports:
-      # Debug
-      - "127.0.0.1:55553:55553"
     volumes:
       - msf_data:/home/msf/.msf4
     networks:

@@ -136,6 +136,10 @@ more-itertools==10.8.0
     # via openapi-core
 msgpack==1.1.2
     # via pymetasploit3
+numpy==2.3.4
+    # via
+    #   sgr-deep-research (pyproject.toml)
+    #   pandas
 openai==2.3.0
     # via sgr-deep-research (pyproject.toml)
 openapi-core==0.19.5
@@ -149,6 +153,8 @@ openapi-schema-validator==0.6.3
 openapi-spec-validator==0.7.2
     # via openapi-core
 openpyxl==3.1.5
+    # via sgr-deep-research (pyproject.toml)
+pandas==2.3.0
     # via sgr-deep-research (pyproject.toml)
 parse==1.20.2
     # via openapi-core
@@ -185,6 +191,7 @@ python-dateutil==2.9.0.post0
     #   sgr-deep-research (pyproject.toml)
     #   dateparser
     #   htmldate
+    #   pandas
 python-dotenv==1.1.1
     # via
     #   fastmcp
@@ -192,7 +199,9 @@ python-dotenv==1.1.1
 python-multipart==0.0.20
     # via mcp
 pytz==2025.2
-    # via dateparser
+    # via
+    #   dateparser
+    #   pandas
 pyyaml==6.0.3
     # via
     #   sgr-deep-research (pyproject.toml)
@@ -268,6 +277,8 @@ typing-inspection==0.4.2
     # via
     #   pydantic
     #   pydantic-settings
+tzdata==2025.2
+    # via pandas
 tzlocal==5.3.1
     # via dateparser
 urllib3==2.5.0
